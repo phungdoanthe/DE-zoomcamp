@@ -1,0 +1,60 @@
+id: count_row
+namespace: zoomcamp
+
+inputs:
+  - id: taxi
+    type: SELECT 
+    displayName: Select taxi type
+    values: [yellow, green]
+    defaults: yellow
+
+variables:
+  file: "{{inputs.taxi}}_tripdata_2020-{{inputs.month}}.csv"
+
+tasks:
+  - id: for_each
+    type: io.kestra.plugin.core.flow.ForEach
+    values: ["01", "02", "03", "04", "05", "06", "07"]
+    tasks:
+      - id: sub_flow
+        type: io.kestra.plugin.core.flow.Sequential
+        tasks:
+          - id: debug
+            type: io.kestra.plugin.core.debug.Return
+            format: "Processing {{parent.taskrun.value}}"
+
+          - id: extract
+            type: io.kestra.plugin.scripts.shell.Commands
+            outputFiles:
+              - "*.csv"
+            taskRunner: 
+              type: io.kestra.plugin.core.runner.Process
+            commands:
+              - wget -qO- https://github.com/DataTalksClub/nyc-tlc-data/releases/download/{{inputs.taxi}}/{{inputs.taxi}}_tripdata_2020-{{parent.taskrun.value}}.csv.gz | gunzip > {{inputs.taxi}}_tripdata_2020-{{parent.taskrun.value}}.csv
+
+          - id: ingext_to_duckdb
+            type: io.kestra.plugin.jdbc.duckdb.Query
+            inputFiles:
+              taxi.csv: "{{outputs.extract.outputFiles[inputs.taxi ~ '_tripdata_2020-' ~ parent.taskrun.value ~ '.csv']}}"
+            sql: |
+              INSTALL csv;
+              LOAD csv;
+              SELECT count(*) as total
+              FROM read_csv_auto('{{workingDir}}/taxi.csv')
+            fetchType: STORE
+          
+          - id: save_to_kv
+            type: io.kestra.plugin.core.kv.Set
+            key: "2020_{{inputs.taxi}}_row_count"
+            value: "{{ kv(inputs.taxi ~ '_total_rows', default=0) + outputs.ingext_to_duckdb.row.total }}"
+          
+          - id: log_total
+            type: io.kestra.plugin.core.log.Log
+            message: |
+              New rows found: {{ outputs.count_new_rows.row.total }}
+              New Global Total for {{ inputs.taxi }}: {{ kv(inputs.taxi ~ '_total_rows') }}
+          
+          - id: purge_files
+            type: io.kestra.plugin.core.storage.PurgeCurrentExecutionFiles
+            description: To avoid cluttering your storage, we will remove the downloaded files
+

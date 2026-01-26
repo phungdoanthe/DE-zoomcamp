@@ -8,12 +8,16 @@ inputs:
     values: [yellow, green]
     defaults: yellow
 
-variables:
-  file: "{{inputs.taxi}}_tripdata_2020-{{inputs.month}}.csv"
-
 tasks:
+  - id: set_kv
+    type: io.kestra.plugin.core.kv.Set
+    key: "{{ inputs.taxi }}_total_rows"
+    value: 0
+    kvType: NUMBER
+
   - id: for_each
     type: io.kestra.plugin.core.flow.ForEach
+    concurrencyLimit: 1
     values: ["01", "02", "03", "04", "05", "06", "07"]
     tasks:
       - id: sub_flow
@@ -23,38 +27,39 @@ tasks:
             type: io.kestra.plugin.core.debug.Return
             format: "Processing {{parent.taskrun.value}}"
 
-          - id: extract
-            type: io.kestra.plugin.scripts.shell.Commands
-            outputFiles:
-              - "*.csv"
-            taskRunner: 
-              type: io.kestra.plugin.core.runner.Process
-            commands:
-              - wget -qO- https://github.com/DataTalksClub/nyc-tlc-data/releases/download/{{inputs.taxi}}/{{inputs.taxi}}_tripdata_2020-{{parent.taskrun.value}}.csv.gz | gunzip > {{inputs.taxi}}_tripdata_2020-{{parent.taskrun.value}}.csv
-
-          - id: ingext_to_duckdb
+          - id: ingest_to_duckdb
             type: io.kestra.plugin.jdbc.duckdb.Query
-            inputFiles:
-              taxi.csv: "{{outputs.extract.outputFiles[inputs.taxi ~ '_tripdata_2020-' ~ parent.taskrun.value ~ '.csv']}}"
             sql: |
-              INSTALL csv;
-              LOAD csv;
               SELECT count(*) as total
-              FROM read_csv_auto('{{workingDir}}/taxi.csv')
-            fetchType: STORE
+              FROM read_csv_auto('https://github.com/DataTalksClub/nyc-tlc-data/releases/download/{{inputs.taxi}}/{{inputs.taxi}}_tripdata_2020-{{parent.taskrun.value}}.csv.gz')
+            fetchType: FETCH_ONE
+            
+          - id: math_example
+            type: io.kestra.plugin.core.debug.Return
+            format: "{{ outputs.ingest_to_duckdb[parent.taskrun.value].row.total }}"
+          
+          - id: math_example1
+            type: io.kestra.plugin.core.debug.Return
+            format: "{{ kv(inputs.taxi ~ '_total_rows') }}"
+
+
+          
+          - id: calculate_total
+            type: io.kestra.plugin.core.debug.Return
+
+            format: "{{ kv(inputs.taxi ~ '_total_rows') + outputs.ingest_to_duckdb[parent.taskrun.value].row.total }}"
           
           - id: save_to_kv
             type: io.kestra.plugin.core.kv.Set
-            key: "2020_{{inputs.taxi}}_row_count"
-            value: "{{ kv(inputs.taxi ~ '_total_rows', default=0) + outputs.ingext_to_duckdb.row.total }}"
+            key: "{{ inputs.taxi ~ '_total_rows' }}"
+            value: "{{ outputs.calculate_total[parent.taskrun.value].value }}"
           
           - id: log_total
             type: io.kestra.plugin.core.log.Log
             message: |
-              New rows found: {{ outputs.count_new_rows.row.total }}
-              New Global Total for {{ inputs.taxi }}: {{ kv(inputs.taxi ~ '_total_rows') }}
+              Month: {{ parent.taskrun.value }}
+              New rows found: {{ outputs.ingest_to_duckdb[parent.taskrun.value].row.total }}
+              New Global Total for {{ inputs.taxi }}: {{ outputs.calculate_total[parent.taskrun.value].value }}
           
           - id: purge_files
             type: io.kestra.plugin.core.storage.PurgeCurrentExecutionFiles
-            description: To avoid cluttering your storage, we will remove the downloaded files
-

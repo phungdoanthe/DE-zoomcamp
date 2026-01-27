@@ -17,8 +17,7 @@ tasks:
 
   - id: for_each
     type: io.kestra.plugin.core.flow.ForEach
-    concurrencyLimit: 1
-    values: ["01", "02", "03", "04", "05", "06", "07"]
+    values: ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12"]
     tasks:
       - id: sub_flow
         type: io.kestra.plugin.core.flow.Sequential
@@ -34,32 +33,31 @@ tasks:
               FROM read_csv_auto('https://github.com/DataTalksClub/nyc-tlc-data/releases/download/{{inputs.taxi}}/{{inputs.taxi}}_tripdata_2020-{{parent.taskrun.value}}.csv.gz')
             fetchType: FETCH_ONE
             
-          - id: math_example
-            type: io.kestra.plugin.core.debug.Return
-            format: "{{ outputs.ingest_to_duckdb[parent.taskrun.value].row.total }}"
-          
-          - id: math_example1
-            type: io.kestra.plugin.core.debug.Return
-            format: "{{ kv(inputs.taxi ~ '_total_rows') }}"
-
-
-          
           - id: calculate_total
-            type: io.kestra.plugin.core.debug.Return
+            type: io.kestra.plugin.transform.jsonata.TransformValue
+            # Wrap each side in parentheses and cast to int
+            from: |
+              {
+                "current_total_rows": {{ kv(inputs.taxi ~ '_total_rows') }},
+                "file_total_rows": {{ outputs.ingest_to_duckdb[parent.taskrun.value].row.total }}
+              }
 
-            format: "{{ kv(inputs.taxi ~ '_total_rows') + outputs.ingest_to_duckdb[parent.taskrun.value].row.total }}"
-          
+            expression: |
+              {
+                "total_rows": $number(current_total_rows) + $number(file_total_rows)
+              }
+              
           - id: save_to_kv
             type: io.kestra.plugin.core.kv.Set
             key: "{{ inputs.taxi ~ '_total_rows' }}"
-            value: "{{ outputs.calculate_total[parent.taskrun.value].value }}"
+            value: "{{ outputs.calculate_total[parent.taskrun.value].value.total_rows }}"
           
           - id: log_total
             type: io.kestra.plugin.core.log.Log
             message: |
               Month: {{ parent.taskrun.value }}
               New rows found: {{ outputs.ingest_to_duckdb[parent.taskrun.value].row.total }}
-              New Global Total for {{ inputs.taxi }}: {{ outputs.calculate_total[parent.taskrun.value].value }}
+              New Global Total for {{ inputs.taxi }}: {{ outputs.calculate_total[parent.taskrun.value].value.total_rows }}
           
           - id: purge_files
             type: io.kestra.plugin.core.storage.PurgeCurrentExecutionFiles

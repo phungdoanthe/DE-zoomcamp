@@ -119,3 +119,8 @@ build/
 *.egg-info/
 .venv/
 >>>>>>> 54f80e9096c6b7f0caeed2ee75f1504bc31112b7
+
+# Data directory
+data/
+key/
+*.duckdb

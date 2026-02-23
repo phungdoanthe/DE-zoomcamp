@@ -124,3 +124,4 @@ build/
 data/
 key/
 *.duckdb
+*.csv

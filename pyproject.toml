@@ -11,3 +11,8 @@ dependencies = [
     "pandas>=2.3.3",
     "pyarrow>=23.0.0",
 ]
+
+[tool.uv.workspace]
+members = [
+    "week5",
+]

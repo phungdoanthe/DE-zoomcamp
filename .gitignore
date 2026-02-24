@@ -125,3 +125,8 @@ data/
 key/
 *.duckdb
 *.csv
+
+.bruin.yml
+logs/runs
+logs/*.log
+logs/queries

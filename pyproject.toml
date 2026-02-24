@@ -12,7 +12,3 @@ dependencies = [
     "pyarrow>=23.0.0",
 ]
 
-[tool.uv.workspace]
-members = [
-    "week5",
-]

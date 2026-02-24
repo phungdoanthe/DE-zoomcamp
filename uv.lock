@@ -7,6 +7,12 @@ resolution-markers = [
     "python_full_version < '3.11'",
 ]
 
+[manifest]
+members = [
+    "de-zoom-camp",
+    "week5",
+]
+
 [[package]]
 name = "agate"
 version = "1.9.1"
@@ -445,6 +451,7 @@ dependencies = [
     { name = "ipykernel" },
     { name = "pandas" },
     { name = "pyarrow" },
+    { name = "tzdata" },
 ]
 
 [package.metadata]
@@ -454,6 +461,7 @@ requires-dist = [
     { name = "ipykernel", specifier = ">=7.1.0" },
     { name = "pandas", specifier = ">=2.3.3" },
     { name = "pyarrow", specifier = ">=23.0.0" },
+    { name = "tzdata" },
 ]
 
 [[package]]
@@ -2010,6 +2018,17 @@ sdist = { url = "https://files.pythonhosted.org/packages/24/30/6b0809f4510673dc7
 wheels = [
     { url = "https://files.pythonhosted.org/packages/af/b5/123f13c975e9f27ab9c0770f514345bd406d0e8d3b7a0723af9d43f710af/wcwidth-0.2.14-py2.py3-none-any.whl", hash = "sha256:a7bb560c8aee30f9957e5f9895805edd20602f2d7f720186dfd906e82b4982e1", size = 37286, upload-time = "2025-09-22T16:29:51.641Z" },
 ]
+
+[[package]]
+name = "week5"
+version = "0.1.0"
+source = { virtual = "week5" }
+dependencies = [
+    { name = "tzdata" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "tzdata", specifier = ">=2025.3" }]
 
 [[package]]
 name = "zipp"

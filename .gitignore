@@ -56,7 +56,6 @@ __pycache__/
 # uv cache (optional – usually global, but safe to ignore)
 .uv/
 
-<<<<<<< HEAD
 # OS / Editor
 .vscode/
 .idea/
@@ -112,16 +111,19 @@ terraform.rc
 # planout
 
 *.json
-=======
 # Build / packaging
 dist/
 build/
 *.egg-info/
 .venv/
->>>>>>> 54f80e9096c6b7f0caeed2ee75f1504bc31112b7
 
 # Data directory
 data/
 key/
 *.duckdb
 *.csv
+
+.bruin.yml
+logs/runs
+logs/*.log
+*.db

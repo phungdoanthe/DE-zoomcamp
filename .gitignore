@@ -127,3 +127,4 @@ key/
 logs/runs
 logs/*.log
 *.db
+*.db.wal

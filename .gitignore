@@ -128,3 +128,4 @@ logs/runs
 logs/*.log
 logs/queries
 *.db
+key

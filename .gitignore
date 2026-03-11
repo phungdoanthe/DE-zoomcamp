@@ -128,4 +128,7 @@ logs/runs
 logs/*.log
 logs/queries
 *.db
-key
+key/
+*.db.wal
+logs/
+uv.lock

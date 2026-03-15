@@ -132,3 +132,6 @@ key/
 *.db.wal
 logs/
 uv.lock
+*.parquet
+*.csv
+*.parquet.gz
